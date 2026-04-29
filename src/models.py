@@ -1,35 +1,67 @@
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import String, Boolean, Integer
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy import String, Boolean, Integer, ForeignKey
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+from typing import List
 
 db = SQLAlchemy()
 
+
 class User(db.Model):
+    __tablename__ = "user"
+
     id: Mapped[int] = mapped_column(primary_key=True)
     email: Mapped[str] = mapped_column(String(120), unique=True, nullable=False)
     password: Mapped[str] = mapped_column(String(120), nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean(), nullable=False)
 
+    favorites: Mapped[List["Favorite"]] = relationship(back_populates="user")
 
-    def serialize(self):
-        return {
-            "id": self.id,
-            "email": self.email,
-            # do not serialize the password, its a security breach
-        }
 
-class Planets (db.Model):
+class Planets(db.Model):
+    __tablename__ = "planets"
+
     id: Mapped[int] = mapped_column(primary_key=True)
-    name: Mapped[str] = mapped_column(String(120), unique= False, nullable=False)
+    name: Mapped[str] = mapped_column(String(120), nullable=False)
     climate: Mapped[str] = mapped_column(String(120), nullable=False)
-    diameter: Mapped[str] = mapped_column(Integer,nullable=False)
+    diameter: Mapped[int] = mapped_column(Integer, nullable=False)
+
+    favorites: Mapped[List["Favorite"]] = relationship(back_populates="planet")
 
 
-    def serialize(self):
-        return {
-            "id": self.id,
-            "name": self.name,
-            "climate": self.climate,
-            "diameter": self.diameter,
-            
-        }
+class People(db.Model):
+    __tablename__ = "people"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(120), nullable=False)
+    gender: Mapped[str] = mapped_column(String(50))
+    height: Mapped[int] = mapped_column(Integer)
+
+    favorites: Mapped[List["Favorite"]] = relationship(back_populates="people")
+
+
+class Vehicles(db.Model):
+    __tablename__ = "vehicles"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(120), nullable=False)
+    model: Mapped[str] = mapped_column(String(120))
+    passengers: Mapped[int] = mapped_column(Integer)
+
+    favorites: Mapped[List["Favorite"]] = relationship(back_populates="vehicle")
+
+
+class Favorite(db.Model):
+    __tablename__ = "favorite"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+
+    user_id: Mapped[int] = mapped_column(ForeignKey("user.id"))
+
+    planet_id: Mapped[int] = mapped_column(ForeignKey("planets.id"), nullable=True)
+    people_id: Mapped[int] = mapped_column(ForeignKey("people.id"), nullable=True)
+    vehicle_id: Mapped[int] = mapped_column(ForeignKey("vehicles.id"), nullable=True)
+
+    user: Mapped["User"] = relationship(back_populates="favorites")
+    planet: Mapped["Planets"] = relationship(back_populates="favorites")
+    people: Mapped["People"] = relationship(back_populates="favorites")
+    vehicle: Mapped["Vehicles"] = relationship(back_populates="favorites")
